@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KHOZZA • Secure Checkout</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&family=Cinzel:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        :root { 
+            --bg: #050505; --card: #0f0f0f; --muted: #bfb6a0; --accent: #d4af37; 
+            --secondary: #2a2a2a; --text-primary: #ffffff; --error: #f44336; 
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text-primary); font-family: 'Inter', sans-serif; min-height: 100vh; line-height: 1.5; }
+        header { display: flex; align-items: center; justify-content: space-between; padding: 20px 28px; border-bottom: 1px solid rgba(255,255,255,0.1); position: sticky; top:0; background: var(--bg); z-index:1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .logo { font-family: 'Cinzel', serif; font-size:22px; color: var(--accent); letter-spacing:2px; font-weight:600; text-transform:uppercase; }
+        .header-right { display:flex; align-items:center; gap:12px; }
+        .cart-btn { background: var(--accent); color:#000; padding:8px 16px; border-radius:50px; font-weight:600; text-decoration:none; display:flex; align-items:center; gap:8px; transition: background 0.3s, transform 0.2s; }
+        .cart-btn:hover { background:#c19a2f; transform:translateY(-2px); }
+        .hamburger { display:none; font-size:26px; cursor:pointer; color: var(--accent); }
+        nav { display:flex; gap:18px; }
+        nav a { color: var(--muted); text-decoration:none; font-weight:600; position:relative; transition: color 0.3s, transform 0.2s; }
+        nav a:hover { color: var(--accent); transform:translateY(-2px); }
+        @media(max-width:768px){ header{padding:16px 24px;} nav{ display:none; flex-direction:column; position:absolute; top:70px; right:24px; background:var(--card); padding:15px; border-radius:12px; width:200px; box-shadow:0 4px 20px rgba(0,0,0,0.3);} nav.show{display:flex;} .hamburger{display:block;} }
+        .wrap { max-width:900px; margin:28px auto; padding:20px; }
+        .card { background:var(--card); border:1px solid rgba(255,255,255,0.1); padding:20px; border-radius:12px; margin-bottom:20px; box-shadow:0 4px 12px rgba(0,0,0,0.3); }
+        h2 { font-family:'Cinzel', serif; color: var(--accent); margin-bottom:14px; font-size:24px; }
+        #upiSection h2 { font-size: 18px; line-height: 1.4; }
+        label{display:block;color:var(--muted);margin:8px 0 4px;font-weight:600;}
+        input, textarea, select { width:100%; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:#0b0b0b; color:var(--text-primary); transition:border 0.3s; }
+        input:focus, textarea:focus, select:focus { border-color:var(--accent); outline:none; }
+        .row{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px;}
+        .checkout-btn{ background:var(--accent); color:#000; padding:12px 18px; border:none; border-radius:50px; font-weight:600; cursor:pointer; text-align:center; transition: background 0.3s, transform 0.2s; }
+        .checkout-btn:hover{ background:#c19a2f; transform:translateY(-2px);}
+        .secondary-btn{background:var(--secondary); color:var(--muted); padding:12px 18px; border:1px solid rgba(255,255,255,0.1); border-radius:50px; font-weight:600; cursor:pointer; text-align:center; transition: background 0.3s, transform 0.2s;}
+        .secondary-btn:hover{background:rgba(255,255,255,0.1); transform:translateY(-2px);}
+        #loadingOverlay{ position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); display:none; flex-direction:column; align-items:center; justify-content:center; font-size:24px; color:var(--text-primary); z-index:1000;}
+        #countdown{font-size:36px; margin-top:10px;}
+        #upiSection{display:none; margin-top:20px;}
+        #upiSection img{max-width:220px; margin-bottom:10px; border-radius:8px;}
+        #upiSection .priceDisplay{font-size:28px; font-weight:600; color:var(--accent); margin-bottom:10px; text-align:right;}
+        #orderConfirm{display:none; margin-top:20px;}
+        .copyBtn{ background:#d32f2f; color:#fff; margin-top:8px; display:inline-block; padding:8px 12px; border-radius:8px; cursor:pointer; transition: background 0.3s, transform 0.2s;}
+        .error-message { color: var(--error); margin-top: 4px; font-size: 14px; }
+        [aria-invalid="true"] { border-color: var(--error) !important; }
+        ul.product-list{list-style:none;padding:0;}
+        ul.product-list li{margin-bottom:8px; display:flex; gap:10px; align-items:center; border-bottom: 1px dashed rgba(255, 255, 255, 0.1); padding-bottom: 8px;}
+        ul.product-list li img{width:60px; height:60px; object-fit:cover; border-radius:6px;}
+        #productSummary .priceDisplay { font-size: 28px; font-weight: 600; color: var(--accent); text-align: right; margin-top: 12px; }
+        .track-btn {
+            background: #242424;
+            color: #e7e0cc;
+            padding: 12px 18px;
+            border: 1px solid #2d2d2d;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 15px;
+            transition: background 0.3s, transform 0.2s;
+        }
+        .track-btn:hover {
+             background: #333;
+             transform: translateY(-2px);
+        }
+        /* Footer Styling */
+        footer { 
+            text-align: center; 
+            padding: 20px; 
+            color: var(--accent); 
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">KHOZZA</div>
+        <div class="header-right">
+            <a href="cart.html" class="cart-btn"><i class="fas fa-arrow-left"></i> Edit Cart</a>
+            <div class="hamburger" onclick="toggleMenu()" aria-label="Toggle navigation menu" role="button" aria-expanded="false" aria-controls="nav">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+        <nav id="nav">
+            <a href="index.html">Home</a>
+            <a href="wallets.html">Wallets</a>
+            <a href="watches.html">Watch Boxes</a>
+            <a href="fashion.html">Fashion</a>
+            <a href="about.html">About</a>
+            <a href="privacy.html">Privacy</a>
+            <a href="contact.html">Contact</a>
+        </nav>
+    </header>
+
+    <div class="wrap">
+        <div class="card" id="checkoutCard">
+            <h2>Secure Checkout</h2>
+            <div id="productSummary"></div>
+
+            <label for="name">Full Name</label>
+            <input id="name" type="text" placeholder="Your name">
+            <div class="error-message" id="nameError"></div>
+
+            <label for="phone">Phone</label>
+            <div style="display: flex; gap: 8px;">
+                <select id="countryCode">
+                    <option value="+91">+91 (India)</option>
+                    <option value="+1">+1 (USA)</option>
+                    <option value="+44">+44 (UK)</option>
+                </select>
+                <input id="phone" type="tel" placeholder="Mobile number" maxlength="10">
+            </div>
+            <div class="error-message" id="phoneError"></div>
+
+            <label for="pincode">Pin Code</label>
+            <input id="pincode" type="text" placeholder="Pincode" maxlength="6">
+            <div class="error-message" id="pincodeError"></div>
+
+            <label for="address">Full Address</label>
+            <textarea id="address" rows="3" placeholder="House, street, city, state"></textarea>
+            <div class="error-message" id="addressError"></div>
+
+            <div class="row">
+                <button class="checkout-btn" onclick="validateAndSave()">Save & Continue</button>
+                <a href="cart.html" class="secondary-btn"><i class="fas fa-arrow-left"></i> Edit Cart</a>
+            </div>
+        </div>
+
+        <div id="loadingOverlay">
+            Processing Order... <br>
+            <div id="countdown">5</div>
+        </div>
+
+        <div class="card" id="upiSection">
+            <h2>Complete your payment via UPI and share the 12-digit reference number in the chat for order confirmation.</h2>
+            <img src="ref.jpg" alt="UPI QR code for payment" onerror="this.src='image/default1.jpg';">
+            <div class="priceDisplay" id="upiAmount"></div>
+            <p>UPI ID: <strong>yourupiid@upi</strong></p>
+            <label for="upiRef">Enter UPI Reference Number</label>
+            <input id="upiRef" type="text" placeholder="Enter your UPI ref number" maxlength="12">
+            <div class="error-message" id="upiRefError"></div>
+            <button class="checkout-btn" onclick="confirmOrder()">Confirm Payment</button>
+            <div class="imageHints">
+                <p>Payment demo:</p>
+                <iframe src="https://www.youtube.com/embed/ncCfznhMcWw" frameborder="0" allowfullscreen></iframe>
+            </div>
+        </div>
+
+        <div class="card" id="orderConfirm">
+            <h2>✅ Order Confirmed</h2>
+            <p>Your Order Number (Tracking ID): <strong id="orderNum" style="color:var(--accent);"></strong></p>
+            <p><strong>Customer Details:</strong></p>
+            <p id="orderDetails"></p>
+            <p><strong>Products Ordered:</strong></p>
+            <ul id="productDetailsList" style="padding-left: 20px; list-style-type: disc; color:var(--muted);"></ul>
+            <p><strong>Confirmation Message:</strong> Your order is confirmed. Track your order status using the Order ID.</p>
+            <div>
+                <span class="copyNote">Copy this Order ID for tracking.</span><br>
+                <span class="copyBtn" onclick="copyOrderID()"><i class="fas fa-copy"></i> Copy Order ID</span>
+            </div>
+            <a id="trackOrderBtn" href="tracking.html" class="track-btn"><i class="fas fa-location-arrow"></i> Track Your Order</a>
+
+            <div class="imageHints">
+                <p>How to track your order:</p>
+                <iframe src="https://www.youtube.com/embed/ncCfznhMcWw" frameborder="0" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        © <span id="yr"></span> KHOZZA • All Rights Reserved
+    </footer>
+
+    <script type="module">
+        // --- FIREBASE IMPORTS ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // --- FIREBASE CONFIGURATION (Using the config you provided) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyB7G-qFuj4e3H_UsTDTundsNlGyHQshEbo",
+            authDomain: "admin-64dbd.firebaseapp.com",
+            projectId: "admin-64dbd",
+            storageBucket: "admin-64dbd.firebasestorage.app",
+            messagingSenderId: "629728527109",
+            appId: "1:629728527109:web:b44d10cbe8170021462d6c",
+            measurementId: "G-EMP3S14ET1"
+        };
+        // --- ADMIN WHATSAPP NUMBER ---
+        const ADMIN_WA_NUMBER = '918860039503'; // Use 91XXXXXXXXXX format
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Global variables to store data after validation but before payment
+        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        let totalAmount = 0;
+        let currentOrderId = null;
+        let customerData = {}; // To store validated customer data
+
+        // --- Helper Functions ---
+
+        function setFieldError(fieldId, message) {
+            const input = document.getElementById(fieldId);
+            const errorDiv = document.getElementById(fieldId + 'Error');
+            if (input) {
+                input.setAttribute('aria-invalid', message ? 'true' : 'false');
+                input.style.borderColor = message ? 'var(--error)' : '';
+            }
+            if (errorDiv) {
+                errorDiv.textContent = message;
+            }
+        }
+
+        function toggleMenu() {
+            const nav = document.getElementById('nav');
+            const hamburger = document.querySelector('.hamburger');
+            const isExpanded = nav.classList.toggle('show');
+            hamburger.setAttribute('aria-expanded', isExpanded);
+        }
+
+        function generateOrderId() {
+            const d=new Date();
+            const y=d.getFullYear();
+            const mo=String(d.getMonth()+1).padStart(2,'0');
+            const da=String(d.getDate()).padStart(2,'0');
+            const rand=Math.floor(1000+Math.random()*9000);
+            return `KHOZZA-${y}${mo}${da}-${rand}`;
+        }
+
+        function loadProductSummary() {
+            document.getElementById('yr').textContent = new Date().getFullYear();
+            const productSummary = document.getElementById('productSummary');
+            const rowDiv = document.querySelector('.row');
+
+            if(cart.length > 0){
+                let summaryHTML='<ul class="product-list">';
+                totalAmount=0;
+                cart.forEach(item=>{
+                    const itemPrice = parseFloat(item.price || 0);
+                    const itemQty = parseInt(item.qty || 1);
+                    const itemTotal = itemPrice * itemQty;
+                    totalAmount += itemTotal;
+                    summaryHTML+=`<li>
+                        <img src="${item.images && item.images[0] ||'image/default1.jpg'}" alt="${item.name}">
+                        <div>
+                            <strong>${item.name}</strong> × ${item.qty||1}
+                            <p>Size: ${item.size||'N/A'}, Color: ${item.color||'N/A'}</p>
+                            <div>Subtotal: ₹${itemTotal.toFixed(2)}</div>
+                        </div>
+                    </li>`;
+                });
+                summaryHTML+='</ul>';
+                summaryHTML+=`<div class="priceDisplay">Total: ₹${totalAmount.toFixed(2)}</div>`;
+                productSummary.innerHTML=summaryHTML;
+                document.getElementById('upiAmount').textContent=`Total: ₹${totalAmount.toFixed(2)}`;
+                if (rowDiv) rowDiv.style.display='grid';
+            }else{
+                productSummary.innerHTML='<p style="color:var(--muted);">No items in cart. Please add items from <a href="index.html">Home</a>.</p>';
+                if (rowDiv) rowDiv.style.display='none';
+            }
+        }
+
+        async function validateAndSave(){
+            // Clear previous errors
+            ['name', 'phone', 'pincode', 'address'].forEach(id => setFieldError(id, ''));
+
+            const name=document.getElementById('name').value.trim();
+            const phone=document.getElementById('phone').value.trim();
+            const countryCode=document.getElementById('countryCode').value;
+            const pincode=document.getElementById('pincode').value.trim();
+            const address=document.getElementById('address').value.trim();
+            
+            let isValid = true;
+
+            // Validation logic
+            if(!name) { setFieldError('name', 'Full Name is required.'); isValid = false; }
+            if(!phone || !/^\d{10}$/.test(phone)) { setFieldError('phone', '10-digit phone number is required.'); isValid = false; }
+            if(!pincode || !/^\d{6}$/.test(pincode)) { setFieldError('pincode', '6-digit Pincode is required.'); isValid = false; }
+            if(!address) { setFieldError('address', 'Full Address is required.'); isValid = false; }
+            if(cart.length === 0){ alert('Cart is empty. Please add items to cart.'); return; }
+
+            if (!isValid) return;
+
+            currentOrderId = generateOrderId();
+            
+            // Save validated customer data globally
+            customerData = {
+                customerName: name,
+                customerPhone: countryCode + phone,
+                customerAddress: address,
+                customerPincode: pincode
+            };
+
+            document.getElementById('loadingOverlay').style.display='flex';
+            
+            try {
+                // Saving products under the 'products' key
+                const orderData = {
+                    orderId: currentOrderId,
+                    ...customerData, // Spread customer data
+                    totalAmount: totalAmount,
+                    products: cart.map(item => ({ // Correct key used for Admin Panel
+                        productName: item.name,
+                        qty: parseInt(item.qty || 1),
+                        size: item.size || 'N/A',
+                        color: item.color || 'N/A',
+                        price: parseFloat(item.price || 0)
+                    })),
+                    status: 'Details Submitted, Awaiting Payment',
+                    timestamp: serverTimestamp()
+                };
+
+                await setDoc(doc(db, "orders", currentOrderId), orderData);
+                
+                document.getElementById('checkoutCard').style.display='none';
+
+                let countdown=5;
+                document.getElementById('countdown').textContent=countdown;
+                const interval=setInterval(()=>{
+                    countdown--;
+                    document.getElementById('countdown').textContent=countdown;
+                    if(countdown<0){ 
+                        clearInterval(interval); 
+                        document.getElementById('loadingOverlay').style.display='none'; 
+                        document.getElementById('upiSection').style.display='block'; 
+                    }
+                },1000);
+
+            } catch (e) {
+                console.error("Firebase save error:", e);
+                alert('Order save failed. Please check your internet or Firebase rules.');
+                document.getElementById('loadingOverlay').style.display='none';
+                document.getElementById('checkoutCard').style.display='block';
+            }
+        }
+
+        async function confirmOrder(){
+            setFieldError('upiRef', '');
+            const upiRef=document.getElementById('upiRef').value.trim();
+            
+            if(!upiRef || !/^\d{12}$/.test(upiRef)){ 
+                setFieldError('upiRef', 'Please enter a valid 12-digit UPI Reference Number.');
+                return; 
+            }
+
+            if (!currentOrderId) {
+                alert('Order ID missing. Please go back and save details.');
+                return;
+            }
+
+            try{
+                // Update Order in Firebase with UPI Ref and Final Status
+                await updateDoc(doc(db,"orders",currentOrderId),{
+                    upiRef: upiRef,
+                    status: 'Order Confirmed - Payment Ref Received',
+                    paymentConfirmedAt: serverTimestamp()
+                });
+
+                // --- FIX 1: Display Details on Confirmation Screen ---
+                document.getElementById('upiSection').style.display='none';
+                document.getElementById('orderConfirm').style.display='block';
+                document.getElementById('orderNum').textContent = currentOrderId;
+                document.getElementById('trackOrderBtn').href = `tracking.html?orderId=${currentOrderId}`;
+
+                // Customer Details
+                document.getElementById('orderDetails').innerHTML = `
+                    Name: <strong>${customerData.customerName}</strong><br>
+                    Phone: <strong>${customerData.customerPhone}</strong><br>
+                    Address: <strong>${customerData.customerAddress}, ${customerData.customerPincode}</strong><br>
+                    Total Paid: <strong>₹${totalAmount.toFixed(2)}</strong>
+                `;
+                
+                // Product Details
+                const productListHTML = cart.map(item => 
+                    `<li>${item.name} (Size: ${item.size || 'N/A'}, Color: ${item.color || 'N/A'}) × ${item.qty || 1}</li>`
+                ).join('');
+                document.getElementById('productDetailsList').innerHTML = productListHTML;
+
+
+                // --- FIX 2: Construct WhatsApp Message and Redirect ---
+                const message=encodeURIComponent(
+                    `*NEW KHOZZA ORDER CONFIRMED*\n\n` +
+                    `*Order ID:* ${currentOrderId}\n` +
+                    `*Total:* ₹${totalAmount.toFixed(2)}\n` +
+                    `*UPI Ref:* ${upiRef}\n` +
+                    `*Customer:* ${customerData.customerName}\n` +
+                    `*Phone:* ${customerData.customerPhone}\n` +
+                    `*Address:* ${customerData.customerAddress}, ${customerData.customerPincode}\n` +
+                    `--- Items ---\n${cart.map(item => `${item.name} (Size: ${item.size || 'N/A'}, Color: ${item.color || 'N/A'}) × ${item.qty || 1}`).join('\n')}`
+                );
+
+                // Clear Cart
+                localStorage.removeItem('cart'); 
+
+                // Redirect to WhatsApp after a short delay for confirmation display
+                setTimeout(() => {
+                    window.location.href = `https://wa.me/${ADMIN_WA_NUMBER}?text=${message}`;
+                }, 1500);
+
+            }catch(e){ 
+                console.error("Firebase update error:", e); 
+                alert('Error confirming payment. Your details were saved, but please share the UPI Ref directly on WhatsApp.'); 
+            }
+        }
+
+        function copyOrderID(){
+            const orderID = document.getElementById('orderNum').textContent;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(orderID).then(() => {
+                    alert('Order ID copied to clipboard: ' + orderID);
+                }).catch(err => {
+                    console.error('Could not copy text: ', err);
+                });
+            } else {
+                alert('Please copy this ID manually: ' + orderID);
+            }
+        }
+        
+        // --- Event Listeners to run functions ---
+        document.addEventListener('DOMContentLoaded', loadProductSummary);
+        
+        // Expose functions to the global scope so they can be called from inline HTML (onclick)
+        window.toggleMenu = toggleMenu;
+        window.validateAndSave = validateAndSave;
+        window.confirmOrder = confirmOrder;
+        window.copyOrderID = copyOrderID;
+    </script>
+</body>
+</html>
